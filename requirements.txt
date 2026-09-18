@@ -1,0 +1,5 @@
+numpy>=1.24
+pandas>=2.0
+PyYAML>=6.0
+# Windows only - comment out on Linux/macOS
+MetaTrader5>=5.0.45

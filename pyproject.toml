@@ -1,0 +1,22 @@
+[project]
+name = "xauscalp"
+version = "1.0.0"
+description = "Session-scheduled XAUUSD scalping engine for MetaTrader 5"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+# MetaTrader5 is Windows-only. Install with: pip install -e ".[mt5]"
+mt5 = ["MetaTrader5>=5.0.45"]
+dev = ["pytest>=7.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,222 @@
+# =====================================================================
+# XAUUSD DAY TRADING - 6 setups, targeting 3+ trades/day
+#
+# M15 signals / H1 context / H4 bias. Directional lock: trend decided
+# before each session, then that side only.
+#
+# FREQUENCY WARNING: gates below are deliberately permissive to reach
+# 3/day. On synthetic tests this band produced PF 0.36 and repeatedly
+# hit the equity floor. Watch the first two weeks closely.
+# =====================================================================
+
+symbol:
+  name: "XAUUSD"
+
+costs:
+  commission_per_lot_per_side: 0.0
+  assumed_slippage_points: 8.0
+  max_spread_points: 70.0
+  max_cost_to_stop_ratio: 0.12
+  max_cost_to_target_ratio: 0.10
+
+sessions:
+  asian:   {tz: "Asia/Tokyo",       start: "09:00", end: "15:00", enabled: true}
+  london:  {tz: "Europe/London",    start: "08:00", end: "16:30", enabled: true}
+  newyork: {tz: "America/New_York", start: "08:30", end: "16:00", enabled: true}
+
+  asian_range_start: "09:00"
+  asian_range_end: "14:00"
+  plan_lead_minutes: 30
+  no_new_trades_last_minutes: 60
+  friday_flatten_utc: "19:00"
+
+  # TREND FIRST, THEN DIRECTION - 5 weighted votes, ADX-scaled.
+  directional_lock: true
+  # Lowered to 0.15 to reach 3/day. At 0.40 you get 0.24 trades/day.
+  # This is the single biggest frequency lever.
+  direction_min_conviction: 0.15
+  min_bars_between_entries: 2      # 30 min on M15
+
+regime:
+  atr_period: 14
+  atr_lookback_bars: 500
+  adx_period: 14
+  w_volatility: 0.30
+  w_trend: 0.25
+  w_liquidity: 0.20
+  w_structure: 0.25
+
+  # Opened up so most sessions become tradable. `no_tradable_plan` was
+  # the dominant veto by far - it is what was capping trade count.
+  min_score_asian: 30.0
+  min_score_london: 30.0
+  min_score_newyork: 40.0
+  atr_pct_floor: 0.05
+  atr_pct_abs_floor: 0.02
+  atr_pct_ceiling: 0.99
+
+sweep:
+  enabled: true
+  min_penetration_atr: 0.10
+  max_penetration_atr: 1.30
+  reclaim_bars: 4
+  sl_buffer_atr: 0.40
+  tp1_r: 1.0
+  tp2_r: 2.5
+  min_stop_atr: 0.80
+  max_stop_atr: 3.00
+  require_opposing_liquidity: true
+  level_cooldown_bars: 30
+
+displacement:
+  enabled: true
+  body_atr_mult: 1.25
+  min_fvg_atr: 0.18
+  max_fvg_age_bars: 16
+  entry_fvg_fraction: 0.50
+  sl_buffer_atr: 0.35
+  tp1_r: 1.0
+  tp2_r: 2.8
+  min_stop_atr: 0.80
+  max_stop_atr: 3.50
+  require_bias_alignment: true
+
+# SETUP E - Opening Range Breakout. One per session, every session.
+orb:
+  enabled: true
+  orb_bars: 4                # first hour on M15
+  min_range_atr: 0.4
+  max_range_atr: 6.0
+  break_buffer_atr: 0.12
+  max_bars_after_open: 28
+  min_stop_atr: 0.80
+  max_stop_atr: 3.00
+  tp1_range_mult: 0.8
+  tp2_range_mult: 1.8
+
+# SETUP F - VWAP pullback. Repeats through a trending session.
+vwap:
+  enabled: true
+  touch_band_atr: 0.30
+  max_extension_atr: 1.60
+  min_bars_into_session: 6
+  cooldown_bars: 4           # 1h between VWAP entries
+  sl_buffer_atr: 0.35
+  min_stop_atr: 0.80
+  max_stop_atr: 3.00
+  tp1_r: 1.0
+  tp2_r: 2.2
+
+fib:
+  enabled: true
+  swing_left: 3
+  swing_right: 3
+  profiles:
+    - name: "recommended"
+      enabled: true
+      entry_zone_start: 0.618
+      entry_zone_end: 0.705
+      stop_level: 0.786
+      sl_buffer_atr: 0.30
+      tp1_extension: 1.0
+      tp2_extension: 1.618
+      min_leg_atr: 2.0
+      max_leg_atr: 30.0
+      max_leg_age_bars: 40
+      min_leg_bars: 3
+      max_leg_bars: 40
+      require_confirmation: true
+      require_bias_alignment: true
+      min_stop_atr: 0.80
+      max_stop_atr: 3.50
+      leg_cooldown_bars: 24
+      risk_weight: 1.0
+
+    # YOUR SETTINGS: 0.382 / 0.5 / 0.618 / 0.66 band, 1.618 target.
+    - name: "user"
+      enabled: true
+      entry_zone_start: 0.382
+      entry_zone_end: 0.66
+      stop_level: 1.0
+      sl_buffer_atr: 0.30
+      tp1_extension: 1.0
+      tp2_extension: 1.618
+      min_leg_atr: 2.0
+      max_leg_atr: 30.0
+      max_leg_age_bars: 40
+      min_leg_bars: 3
+      max_leg_bars: 40
+      require_confirmation: false
+      require_bias_alignment: false
+      min_stop_atr: 0.80
+      max_stop_atr: 3.50
+      leg_cooldown_bars: 24
+      risk_weight: 0.5
+
+risk:
+  # Cut to 0.20% because trade count roughly quadrupled. 3 trades/day at
+  # 0.35% would put ~1% of the account at risk daily before any losses.
+  risk_pct_per_trade: 0.20
+  max_daily_loss_pct: 2.5
+  max_weekly_loss_pct: 5.0
+  max_daily_profit_pct: 5.0
+  stop_on_daily_profit: false
+
+  max_concurrent_positions: 5
+  max_trades_per_session: 10
+  max_trades_per_day: 30
+  consecutive_loss_cooloff: 3
+  cooloff_minutes: 90
+
+  # Caps TOTAL open risk. Five same-direction gold positions are one bet
+  # at 5x size, so size shrinks automatically as exposure builds.
+  max_portfolio_risk_pct: 1.0
+  min_signal_quality: 0.30
+
+  scale_risk_by_regime: true
+  min_risk_scale: 0.5
+  equity_floor_pct_of_start: 85.0
+
+manage:
+  partial_at_tp1_pct: 50.0
+  move_to_be_at_r: 1.0
+  be_offset_atr: 0.05
+  trail_after_r: 1.5
+  trail_atr_mult: 2.0
+  time_stop_minutes: 240
+  time_stop_min_r: 0.3
+  max_hold_minutes: 720
+
+news:
+  enabled: true
+  csv_path: "config/news.csv"
+  block_before_minutes: 30
+  block_after_minutes: 30
+  blocked_impacts: ["high"]
+  spread_spike_multiple: 3.0
+
+execution:
+  mode: "paper"
+  allow_live_on_real_account: false
+  deviation_points: 30
+  magic: 770425
+  comment: "xauscalp"
+  poll_seconds: 5.0
+  bar_timeframe: "M15"
+  htf_timeframe: "H1"
+  bias_timeframe: "H4"
+  history_bars: 1200
+  retry_attempts: 3
+  retry_sleep_seconds: 1.0
+
+backtest:
+  initial_equity: 10000.0
+  spread_points_mean: 38.0
+  spread_points_std: 12.0
+  slippage_points_mean: 6.0
+  train_days: 90
+  test_days: 30
+
+db_path: "logs/journal.sqlite"
+log_path: "logs/xauscalp.log"
+log_level: "INFO"
